@@ -85,3 +85,4 @@ header{background:#173543;color:#fff;padding:10px 20px;gap:16px;min-height:68px;
 }
 
 @media(min-width:1100px){#v-pos.on{grid-template-rows:300px minmax(0,1fr)}}
+@media(min-width:1100px){.chips{height:auto;grid-template-rows:none;grid-auto-rows:max-content;align-content:start;overflow:auto}.chip{width:100%;height:auto}}

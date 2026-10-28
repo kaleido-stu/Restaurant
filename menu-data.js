@@ -54,3 +54,12 @@ menuItem('بوكسات','بوكس البوابة 3',400,[], 'نصف فرخة + �
 menuItem('بوكسات','بوكس الغربي',315,[], 'ساندوتش بانيه فينو + ساندوتش سوبر كرانشي فينو + ساندوتش كريسبي فينو + بطاطا وثومية ومخلل وصوص حار.');
 // Retain the existing drinks and dessert, which are not replaced by these pages.
 P=[...MENU_PRODUCTS,...P.filter(p=>['مشروبات','حلويات'].includes(p.c))];
+const categoryGroups={
+ 'الشاورما':['ساندوتش شاورما','عربي شاورما','وزن شاورما','وجبة شاورما'],
+ 'الدجاج والوجبات':['دجاج شواية','وجبة غربي','بوكسات'],
+ 'الساندوتشات والبرجر':['ساندوتش غربي','عربي غربي','برجر'],
+ 'الكريب':['كريب'],
+ 'المقبلات والشعبي':['مقبلات','شعبي'],
+ 'المشروبات والحلويات':['مشروبات','حلويات']
+};
+P.forEach(product=>{product.c=Object.keys(categoryGroups).find(category=>categoryGroups[category].includes(product.c))||product.c});

@@ -163,6 +163,7 @@ header{background:#173543;color:#fff;padding:10px 20px;gap:16px;min-height:68px;
 }
 
 @media(min-width:1100px){#v-pos.on{grid-template-rows:300px minmax(0,1fr)}}
+@media(min-width:1100px){.chips{height:auto;grid-template-rows:none;grid-auto-rows:max-content;align-content:start;overflow:auto}.chip{width:100%;height:auto}}
 
 </style>
 </head>
@@ -214,7 +215,7 @@ header{background:#173543;color:#fff;padding:10px 20px;gap:16px;min-height:68px;
 
 <section id="v-items" class="view">
   <div class="box">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><h3 style="margin:0">إدارة الأصناف</h3><button class="btn in" id="nib" onclick="openEd(0)">+ صنف جديد</button></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px"><h3 style="margin:0">إدارة الأصناف</h3><button class="btn in" onclick="addCategory()">+ تصنيف جديد</button><button class="btn in" id="nib" onclick="openEd(0)">+ صنف جديد</button></div>
     <div class="hint">الصنف المركب بتحدد مكوناته وكمية كل مكوّن، ولما يتباع بتتخصم المكونات من المخزن تلقائيًا. الصنف العادي مرتبط بخامة واحدة. ولو للصنف حجمين ليكل حجم سعره ومكوناته.</div>
     <table id="itt"></table>
   </div>
@@ -306,7 +307,18 @@ const fq=(k,q)=>{q=q===undefined?ST[k].q:q;return +(q/U[ST[k].u][1]).toFixed(2)+
 const avail=v=>Math.min(...v.r.map(([k,q])=>Math.floor(ST[k].q/q)));
 const ing=v=>v.r.length?v.r.map(([k,q])=>`${ST[k].n} ${q} ${U[ST[k].u][0]}`).join(' + '):'لم تُحدد وصفة المخزون بعد';
 const scope=()=>orders.filter(o=>user.r=='a'||(user.r=='b'&&o.br==user.b)||(user.r=='c'&&o.cs==user.n));
-const cats=()=>['الكل',...new Set(P.map(p=>p.c))];
+const PRODUCT_CATEGORIES=['الشاورما','الدجاج والوجبات','الساندوتشات والبرجر','الكريب','المقبلات والشعبي','المشروبات والحلويات'];
+const cats=()=>['الكل',...PRODUCT_CATEGORIES];
+const escapeMarkup=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function addCategory(){
+ if(user.r!=='a')return alert('إضافة التصنيفات للمدير العام فقط');
+ dlg('تصنيف جديد',[{k:'name',l:'اسم التصنيف'}],'إضافة التصنيف',values=>{
+  const name=values.name.trim().replace(/\s+/g,' ');
+  if(!name)return alert('اكتب اسم التصنيف'),false;
+  if(name==='الكل'||PRODUCT_CATEGORIES.includes(name))return alert('التصنيف موجود بالفعل'),false;
+  PRODUCT_CATEGORIES.push(name);rAll();
+ });
+}
 const nm=(p,i)=>p.n+(p.v[i].z?` (${p.v[i].z})`:'');
 
 function init(){
@@ -356,22 +368,21 @@ function confirmOrder(){
 
 /* ===== إدارة الأصناف ===== */
 function rItems(){
- $('#itt').innerHTML='<tr><th>الصنف</th><th>النوع</th><th>التصنيف</th><th>الأحجام / الأسعار / المكونات</th><th></th></tr>'+P.map(p=>`<tr><td>${p.e} <b>${p.n}</b></td><td>${p.s?'عادي':'مركب'}</td><td>${p.c}</td><td>${p.v.map(v=>`<div style="margin-bottom:4px"><b>${v.z?v.z+' — ':''}${f(v.p)}</b><br><small style="color:var(--mu)">${ing(v)}</small></div>`).join('')}</td><td style="white-space:nowrap">${user.r=='a'?`<button class="sm" onclick="openEd(${p.id})">تعديل</button> <button class="sm" onclick="delP(${p.id})">حذف</button>`:'<small style="color:var(--mu)">للمدير العام</small>'}</td></tr>`).join('')}
+ $('#itt').innerHTML='<tr><th>الصنف</th><th>النوع</th><th>التصنيف</th><th>الأحجام / الأسعار / المكونات</th><th></th></tr>'+P.map(p=>`<tr><td>${p.e} <b>${p.n}</b></td><td>${p.s?'عادي':'مركب'}</td><td>${escapeMarkup(p.c)}</td><td>${p.v.map(v=>`<div style="margin-bottom:4px"><b>${v.z?v.z+' — ':''}${f(v.p)}</b><br><small style="color:var(--mu)">${ing(v)}</small></div>`).join('')}</td><td style="white-space:nowrap">${user.r=='a'?`<button class="sm" onclick="openEd(${p.id})">تعديل</button> <button class="sm" onclick="delP(${p.id})">حذف</button>`:'<small style="color:var(--mu)">للمدير العام</small>'}</td></tr>`).join('')}
 function delP(id){if(user.r!='a'||!confirm('حذف الصنف؟'))return;log('حذف صنف '+id);P=P.filter(p=>p.id!=id);cart=[];rAll()}
 function openEd(id){if(user.r!='a')return alert('تعديل الأصناف والأسعار للمدير العام فقط');const p=P.find(x=>x.id==id);
- E=p?JSON.parse(JSON.stringify(p)):{id:0,n:'',c:'ساندوتشات',e:'🌯',s:0,v:[{z:null,p:'',r:[[Object.keys(ST)[0],1]]}]};rEd();opn('em')}
+ E=p?JSON.parse(JSON.stringify(p)):{id:0,n:'',c:PRODUCT_CATEGORIES[0],e:'🌯',s:0,v:[{z:null,p:'',r:[[Object.keys(ST)[0],1]]}]};rEd();opn('em')}
 function rEd(){
  $('#edb').innerHTML=`<h3 style="margin:0 0 8px">${E.id?'تعديل صنف':'صنف جديد'}</h3>
- <input placeholder="اسم الصنف" value="${E.n}" oninput="E.n=this.value">
- <div style="display:flex;gap:6px"><input placeholder="إيموجي" value="${E.e}" oninput="E.e=this.value" style="max-width:80px"><input list="cl" placeholder="التصنيف" value="${E.c}" oninput="E.c=this.value"></div>
- <datalist id="cl">${cats().slice(1).map(c=>`<option>${c}</option>`).join('')}</datalist>
+ <input placeholder="اسم الصنف" aria-label="اسم الصنف" value="${escapeMarkup(E.n)}" oninput="E.n=this.value">
+ <div style="display:flex;gap:6px"><input placeholder="إيموجي" value="${E.e}" oninput="E.e=this.value" style="max-width:80px"><select id="product-category" aria-label="التصنيف" onchange="E.c=this.value" style="flex:1;min-width:0">${PRODUCT_CATEGORIES.map(c=>`<option value="${escapeMarkup(c)}" ${c===E.c?'selected':''}>${escapeMarkup(c)}</option>`).join('')}</select></div>
  <select onchange="E.s=+this.value;if(E.s)E.v.forEach(v=>v.r=v.r.slice(0,1));rEd()"><option value="0" ${E.s?'':'selected'}>صنف مركب (له مكونات)</option><option value="1" ${E.s?'selected':''}>صنف عادي (مرتبط بخامة واحدة)</option></select>
  <label><input type="checkbox" ${E.v.length>1?'checked':''} onchange="tgSz(this.checked)">الصنف له حجمين (صغير / كبير) بمكونات مختلفة</label>
  ${E.v.map((v,i)=>`<div class="vb"><b>${v.z||'السعر والمكونات'}</b><input type="number" placeholder="السعر" value="${v.p}" oninput="E.v[${i}].p=+this.value">`+v.r.map((x,j)=>`<div class="ir"><select onchange="E.v[${i}].r[${j}][0]=this.value;rEd()">${Object.keys(ST).map(k=>`<option value="${k}" ${k==x[0]?'selected':''}>${ST[k].n}</option>`).join('')}</select><input type="number" value="${x[1]}" oninput="E.v[${i}].r[${j}][1]=+this.value"><span>${U[ST[x[0]].u][0]}</span>${E.s?'':`<button class="sm" onclick="E.v[${i}].r.splice(${j},1);rEd()">✕</button>`}</div>`).join('')+(E.s?'':`<button class="sm" onclick="E.v[${i}].r.push([Object.keys(ST)[0],1]);rEd()">+ إضافة مكوّن</button>`)+'</div>').join('')}
  <button class="btn" onclick="saveP()">حفظ الصنف</button><button class="btn g" onclick="cls('em')">إلغاء</button>`}
 function tgSz(on){const b=E.v[0];E.v=on?[{z:'صغير',p:b.p,r:JSON.parse(JSON.stringify(b.r))},{z:'كبير',p:b.p,r:JSON.parse(JSON.stringify(b.r))}]:[{z:null,p:b.p,r:b.r}];rEd()}
 function saveP(){
- if(!E.n.trim()||!E.c.trim())return alert('اكتب اسم الصنف والتصنيف');
+ if(!E.n.trim()||!PRODUCT_CATEGORIES.includes(E.c))return alert('اكتب اسم الصنف واختار التصنيف');
  if(E.v.some(v=>!(v.p>0)||!v.r.length||v.r.some(x=>!(x[1]>0))))return alert('راجع السعر والمكونات وكمياتها');
  if(E.id)P=P.map(p=>p.id==E.id?E:p);else{E.id=Math.max(0,...P.map(p=>p.id))+1;P.push(E)}
  cart=[];cls('em');rAll()}
@@ -554,6 +565,15 @@ menuItem('بوكسات','بوكس البوابة 3',400,[], 'نصف فرخة + �
 menuItem('بوكسات','بوكس الغربي',315,[], 'ساندوتش بانيه فينو + ساندوتش سوبر كرانشي فينو + ساندوتش كريسبي فينو + بطاطا وثومية ومخلل وصوص حار.');
 // Retain the existing drinks and dessert, which are not replaced by these pages.
 P=[...MENU_PRODUCTS,...P.filter(p=>['مشروبات','حلويات'].includes(p.c))];
+const categoryGroups={
+ 'الشاورما':['ساندوتش شاورما','عربي شاورما','وزن شاورما','وجبة شاورما'],
+ 'الدجاج والوجبات':['دجاج شواية','وجبة غربي','بوكسات'],
+ 'الساندوتشات والبرجر':['ساندوتش غربي','عربي غربي','برجر'],
+ 'الكريب':['كريب'],
+ 'المقبلات والشعبي':['مقبلات','شعبي'],
+ 'المشروبات والحلويات':['مشروبات','حلويات']
+};
+P.forEach(product=>{product.c=Object.keys(categoryGroups).find(category=>categoryGroups[category].includes(product.c))||product.c});
 
 </script>
 <script>
