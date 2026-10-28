@@ -1,0 +1,20 @@
+const vm=require('node:vm'),fs=require('node:fs'),assert=require('node:assert/strict');
+const elements=new Map();const el=id=>elements.get(id)||elements.set(id,{id,style:{},dataset:{},classList:{contains:()=>false,add(){},remove(){}},append(){},innerHTML:''}).get(id);
+let dialog,alerts=[],shift={br:0,ex:[]},logs=[];
+const ctx={console,Date,Intl,Math,Number,String,JSON,Map,Set,setTimeout:f=>f(),alert:x=>alerts.push(x),document:{head:{insertAdjacentHTML(){}},body:{append(x){elements.set(x.id,x)}},createElement:()=>({dataset:{},classList:{contains:()=>false,add(){},remove(){}}})},$:s=>s==='.view.on'?{id:'v-pos'}:el(s),user:{r:'b',b:0,n:'مدير'},BR:['أ','ب'],DAYC:{},CFG:{exp:500},f:x=>String(x),sum:a=>a.reduce((a,b)=>a+b,0),cur:()=>shift,log:x=>logs.push(x),rAll(){},applyRole(){},go(){},expense(){},appr:(t,f)=>f(),dlg:(t,fields,label,cb,note)=>{dialog={t,fields,cb,note}}};
+ctx.window=ctx;vm.createContext(ctx);vm.runInContext(fs.readFileSync('finance-demo.js','utf8').replace('})();','globalThis.inspectFinance=()=>({expenses,employees,ledger,statement,loanPart});\napplyRole();rAll();\n})();'),ctx);
+ctx.financeEmployee();dialog.cb({name:'علي',job:'شيف',br:'أ',salary:'6000'});let state=ctx.inspectFinance(),emp=state.employees[0],m=new Date().toISOString().slice(0,7);
+ctx.financeMovement(emp.id);dialog.cb({type:'سلفة',a:'1000',month:m,count:'3',method:'درج الوردية',reason:'سلفة'});
+assert.equal(shift.ex.length,1);assert.equal(state.expenses.length,0);
+ctx.financeMovement(emp.id);dialog.cb({type:'خصم',a:'100',month:m,count:'1',reason:'غياب'});
+ctx.financeMovement(emp.id);dialog.cb({type:'مكافأة',a:'200',month:m,count:'1',reason:'حافز'});
+let s=state.statement(emp,m);assert.equal(s.installment,333.33);assert.equal(s.net,5766.67);assert.equal(s.remaining,1000);
+ctx.financeMonth(m);ctx.financeSalary(emp.id);dialog.cb({method:'درج الوردية'});assert.equal(shift.ex.length,2);assert.equal(state.expenses.length,1);assert.equal(state.statement(emp,m).remaining,666.67);
+ctx.financeSalary(emp.id);assert.equal(state.expenses.length,1);
+ctx.financeMovement(emp.id);assert.equal(dialog.cb({type:'خصم',a:'50',month:m,count:'1',reason:'test'}),false);
+ctx.financeExpense();dialog.cb({br:'أ',a:'250',r:'صيانة',cat:'صيانة',date:m+'-01',due:m+'-28',state:'مستحق',method:'البنك',ref:''});assert.equal(shift.ex.length,2);
+let due=state.expenses[0];ctx.financePayExpense(due.id);dialog.cb({method:'البنك'});assert.equal(due.paid,true);assert.equal(shift.ex.length,2);
+ctx.financeExpense();assert.equal(dialog.cb({br:'ب',a:'10',r:'x',cat:'صيانة',date:m+'-01',due:m+'-28',state:'مدفوع',method:'البنك'}),false);
+ctx.financeExpense();assert.equal(dialog.cb({br:'أ',a:'Infinity',r:'x',cat:'صيانة',date:m+'-01',due:m+'-28',state:'مدفوع',method:'البنك'}),false);
+for(const [a,count] of [[1000,3],[0.05,4],[7,60]]){const loan={a,count,installment:Math.floor(Math.round(a*100)/count)/100};let total=0;for(let k=0;k<count;k++)total+=state.loanPart(loan,k);assert.equal(Math.round(total*100),Math.round(a*100));}
+console.log('PASS: payroll, installments, cash linkage, pending payment, duplicate protection, branch permissions and invalid amounts.');
